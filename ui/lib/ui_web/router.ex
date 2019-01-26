@@ -2,10 +2,12 @@ defmodule UiWeb.Router do
   use UiWeb, :router
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug(:accepts, ["json"])
   end
 
   scope "/api", UiWeb do
-    pipe_through :api
+    pipe_through(:api)
+
+    get("/", MorseController, :encode)
   end
 end
