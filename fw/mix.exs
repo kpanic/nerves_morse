@@ -57,7 +57,9 @@ defmodule NervesMorse.MixProject do
       {:nerves_runtime, "~> 0.6"},
       {:nerves_leds, "~> 0.7"},
       {:nerves_init_gadget, "~> 0.5"},
-      {:nerves_firmware_ssh, "~> 0.3"}
+      {:nerves_firmware_ssh, "~> 0.3"},
+      {:nerves_network, "~> 0.5"},
+      {:ui, path: "../ui"}
     ] ++ system(target)
   end
 

@@ -37,6 +37,22 @@ config :nerves_init_gadget,
   node_host: :mdns_domain,
   ssh_console_port: 22
 
+# Phoenix
+
+config :ui, UiWeb.Endpoint,
+  url: [host: "localhost"],
+  http: [port: 80],
+  secret_key_base: "#############################",
+  root: Path.dirname(__DIR__),
+  server: true,
+  render_errors: [view: UiWeb.ErrorView, accepts: ~w(html json)],
+  pubsub: [name: Nerves.PubSub, adapter: Phoenix.PubSub.PG2],
+  code_reloader: false
+
+config :phoenix, :json_library, Jason
+
+config :logger, level: :debug
+
 # Import target specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 # Uncomment to use target specific configurations
