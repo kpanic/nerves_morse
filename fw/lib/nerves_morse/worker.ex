@@ -1,10 +1,17 @@
 defmodule NervesMorse.Worker do
   @moduledoc """
-  Simple example to blink my nickname in morse code
-  """
-  use GenServer
+  Simple example to blink a string in morse code
 
-  @string "beatpanic"
+  Usage:
+
+  :ok = NervesMorse.Worker.encode("beatpanic")
+  {:error, :already_in_progress} = NervesMorse.Worker.encode("beatpanic")
+  """
+
+  use GenServer
+  require Logger
+
+  @ets_name :nerves_morse_table
 
   @long_blink_on 2_000
   @blink_on 1_000
@@ -13,27 +20,35 @@ defmodule NervesMorse.Worker do
 
   @led_name "led0"
 
-  @wait_for_morse_boot 3
-
   require Logger
 
   alias Nerves.Leds
 
   # Client API
   def start_link(default) do
-    GenServer.start_link(__MODULE__, default)
+    GenServer.start_link(__MODULE__, default, name: __MODULE__)
   end
 
   # Server callbacks
-  def init(state) do
-    {:ok, state, {:continue, :encode}}
+  def init(_state) do
+    :ets.new(@ets_name, [:named_table, :public])
+    {:ok, []}
   end
 
-  def handle_continue(:encode, state) do
-    wait_before_morse(@led_name)
+  def encode(string) when is_binary(string) do
+    case in_progress?() do
+      false ->
+        GenServer.cast(__MODULE__, {:encode, string})
 
+      true ->
+        {:error, :already_in_progress}
+    end
+  end
 
-    @string
+  def handle_cast({:encode, string}, state) do
+    Logger.info("started blinking")
+
+    string
     |> NervesMorse.to_morse()
     |> String.codepoints()
     |> Enum.each(fn morse_char ->
@@ -43,15 +58,19 @@ defmodule NervesMorse.Worker do
 
     Leds.set([{@led_name, false}])
 
+    :ets.delete(:nerves_morse_table, "in_progress")
+
     {:noreply, state}
   end
 
-  defp wait_before_morse(led_key) do
-    for _num <- 0..@wait_for_morse_boot do
-      Leds.set([{led_key, true}])
-      :timer.sleep(5_000)
-      Leds.set([{led_key, false}])
-      :timer.sleep(1_000)
+  defp in_progress?() do
+    case :ets.lookup(@ets_name, "in_progress") do
+      [] ->
+        :ets.insert(@ets_name, {"in_progress", true})
+        false
+
+      _ ->
+        true
     end
   end
 
@@ -68,7 +87,7 @@ defmodule NervesMorse.Worker do
   end
 
   def interpret_morse(unsupported) do
-    IO.inspect("NOT SUPPORTED #{unsupported}")
+    Logger.info("NOT SUPPORTED #{inspect(unsupported)}")
   end
 
   defp led_set({on_duration, off_duration}) do
