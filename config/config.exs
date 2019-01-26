@@ -15,7 +15,7 @@ config :nerves, :firmware, rootfs_overlay: "rootfs_overlay"
 # involved with firmware updates.
 
 config :shoehorn,
-  init: [:nerves_runtime],
+  init: [:nerves_runtime, :nerves_init_gadget],
   app: Mix.Project.config()[:app]
 
 # Use Ringlogger as the logger backend and remove :console.
@@ -23,6 +23,19 @@ config :shoehorn,
 # configuring ring_logger.
 
 config :logger, backends: [RingLogger]
+
+config :nerves_firmware_ssh,
+  authorized_keys: [
+    File.read!(Path.join(System.user_home!(), ".ssh/id_rsa.pub"))
+  ]
+
+config :nerves_init_gadget,
+  ifname: "usb0",
+  address_method: :dhcpd,
+  mdns_domain: "nerves.local",
+  node_name: "hipo",
+  node_host: :mdns_domain,
+  ssh_console_port: 22
 
 # Import target specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
