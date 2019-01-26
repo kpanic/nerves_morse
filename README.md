@@ -18,7 +18,8 @@ https://hexdocs.pm/nerves/targets.html#content
 
 To start your Nerves app:
   * `export MIX_TARGET=my_target` or prefix every command with
-    `MIX_TARGET=my_target`. For example, `MIX_TARGET=rpi3`
+    `MIX_TARGET=my_target`. For example, `MIX_TARGET=rpi0`
+  * cd fw
   * Install dependencies with `mix deps.get`
   * Create firmware with `mix firmware`
   * Burn to an SD card with `mix firmware.burn`
