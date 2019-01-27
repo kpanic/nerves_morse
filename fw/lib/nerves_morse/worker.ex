@@ -32,7 +32,7 @@ defmodule NervesMorse.Worker do
   # Server callbacks
   def init(_state) do
     :ets.new(@ets_name, [:named_table, :public])
-    {:ok, []}
+    {:ok, [], {:continue, :led_turn_off}}
   end
 
   def encode(string) when is_binary(string) do
@@ -43,6 +43,11 @@ defmodule NervesMorse.Worker do
       true ->
         {:error, :already_in_progress}
     end
+  end
+
+  def handle_continue(:led_turn_off, state) do
+    Leds.set([{@led_name, false}])
+    {:noreply, state}
   end
 
   def handle_cast({:encode, string}, state) do
