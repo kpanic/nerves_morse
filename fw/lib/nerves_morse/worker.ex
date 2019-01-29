@@ -36,13 +36,7 @@ defmodule NervesMorse.Worker do
   end
 
   def encode(string) when is_binary(string) do
-    case in_progress?() do
-      false ->
-        GenServer.cast(__MODULE__, {:encode, string})
-
-      true ->
-        {:error, :already_in_progress}
-    end
+    GenServer.call(__MODULE__, {:encode, string})
   end
 
   def handle_continue(:led_turn_off, state) do
@@ -50,9 +44,29 @@ defmodule NervesMorse.Worker do
     {:noreply, state}
   end
 
-  def handle_cast({:encode, string}, state) do
+  def handle_call({:encode, string}, _from, state) do
     Logger.info("started blinking")
 
+    in_progress? =
+      case in_progress?() do
+        false ->
+          :ets.insert(@ets_name, {"in_progress", true})
+          Task.async(fn -> encode_to_morse(string) end)
+          :ok
+
+        true ->
+          {:error, :already_in_progress}
+      end
+
+    {:reply, in_progress?, state}
+  end
+
+  # Catchall for unwanted messages
+  def handle_info(_, state) do
+    {:noreply, state}
+  end
+
+  defp encode_to_morse(string) do
     string
     |> NervesMorse.to_morse()
     |> String.codepoints()
@@ -64,14 +78,11 @@ defmodule NervesMorse.Worker do
     Leds.set([{@led_name, false}])
 
     :ets.delete(:nerves_morse_table, "in_progress")
-
-    {:noreply, state}
   end
 
   defp in_progress?() do
     case :ets.lookup(@ets_name, "in_progress") do
       [] ->
-        :ets.insert(@ets_name, {"in_progress", true})
         false
 
       _ ->
